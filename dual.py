@@ -241,9 +241,15 @@ def iter_stirling(x, k):
         yield d[:i] + [[h] + d[i]] + d[i+1:]
 
 def func_from_series(x, fx_a, fx_b_cfnz, fx_b_cfz):
-  # this function captures the general structure of power-series expansions, so
-  # the parameters do not have intuitive explanations; for a function call f(x)
-  # with the expansion f(x) = sum(c[n] * x**n for n in itertools.count()):
+  # this function defines a mathematical function f(x) through its power-series
+  # expansion around x == 0:
+  #   f(x) == sum(c[n] * x**n for n in itertools.count())
+  # where c[n] is the nth derivative of f evaluated at x == 0 divided by
+  # math.factorial(n)
+
+  # the code makes use of the structure common to all such power-series
+  # expansions; because of this, the function parameters do not have intuitive
+  # explanations, but are instead defined mathematically through
   #   fx_a      == f(x.a)
   #   fx_b_cfnz == lambda m: sum(math.perm(n, m) * c[n] * x.a**n
   #                            for n in itertools.count())
