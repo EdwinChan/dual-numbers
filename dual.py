@@ -10,7 +10,7 @@ import numbers
 import operator
 import sys
 
-def set_scalar(scalar):
+def use_scalar(scalar):
   global stype, sfrac, smath
   if scalar == 'real':
     stype = numbers.Real,
@@ -29,7 +29,7 @@ def set_scalar(scalar):
   else:
     raise ValueError('unrecognized scalar')
 
-set_scalar('real')
+use_scalar('real')
 
 class Dual:
   def __init__(self, a, b):

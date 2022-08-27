@@ -227,10 +227,10 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
     cls.zero.a = 0
 
   def setUp(self):
-    dual.set_scalar('symbol')
+    dual.use_scalar('symbol')
 
   def tearDown(self):
-    dual.set_scalar('real')
+    dual.use_scalar('real')
 
   def assertEqual(self, x, y, msg=None):
     x -= y
@@ -422,10 +422,10 @@ class DualComplexTest(DualFloatTest, unittest.TestCase):
   one  = dual.Dual(1, {})
 
   def setUp(self):
-    dual.set_scalar('complex')
+    dual.use_scalar('complex')
 
   def tearDown(self):
-    dual.set_scalar('real')
+    dual.use_scalar('real')
 
   @classmethod
   def random(cls):
