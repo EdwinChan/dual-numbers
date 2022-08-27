@@ -199,12 +199,12 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
     return smath_isclose(first, second)
   elif not (first_dual or first_scalar):
     raise TypeError(
-      'must be Dual or {}, not {}'
-      .format(stype.__name__, type(first).__name__))
+      'must be {}, not {}'
+      .format(format_types([Dual, *stype]), type(first).__name__))
   elif not (second_dual or second_scalar):
     raise TypeError(
-      'must be Dual or {}, not {}'
-      .format(stype.__name__, type(second).__name__))
+      'must be {}, not {}'
+      .format(format_types([Dual, *stype]), type(second).__name__))
 
 def sqrt(x):
   return x**sfrac(1, 2)
@@ -389,3 +389,17 @@ def acosh(x):
 
 def atanh(x):
   return (log(1+x) - log(1-x)) / 2
+
+def format_alts(alts):
+  alts = list(map(str, alts))
+  if len(alts) == 0:
+    return ''
+  elif len(alts) == 1:
+    return alts[0]
+  elif len(alts) == 2:
+    return '{} or {}'.format(*alts)
+  else:
+    return ', '.join(alts[:-1]) + ', or ' + alts[-1]
+
+def format_types(types):
+  return format_alts(type.__name__ for type in types)
