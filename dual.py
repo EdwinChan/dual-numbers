@@ -305,6 +305,21 @@ def pow_int(x, n):
 def double_factorial(n):
   return functools.reduce(operator.mul, range(n, 0, -2), 1)
 
+def math_func(lazy_smath_func):
+  def wrap(dual_func):
+    def wrapper(x):
+      if isinstance(x, Dual):
+        return dual_func(x)
+      elif isinstance(x, stype):
+        return lazy_smath_func()(x)
+      else:
+        raise TypeError(
+          'must be {}, not {}'
+          .format(format_types([Dual, *stype]), type(x).__name__))
+    return wrapper
+  return wrap
+
+@math_func(lambda: smath.exp)
 def exp(x):
   a = x.a
   r = smath.exp(a)
@@ -313,6 +328,7 @@ def exp(x):
     lambda m: r * a**m,
     lambda m: 1)
 
+@math_func(lambda: smath.log)
 def log(x):
   a = x.a
   if a == 0:
@@ -324,6 +340,7 @@ def log(x):
     lambda m: (1 if m & 1 else -1) * math.factorial(m-1) * c**m,
     lambda m: (1 if m & 1 else -1) * math.factorial(m-1))
 
+@math_func(lambda: smath.sin)
 def sin(x):
   a = x.a
   c, s = smath.cos(a), smath.sin(a)
@@ -332,6 +349,7 @@ def sin(x):
     lambda m: (-1 if m & 2 else 1) * (c if m & 1 else s) * a**m,
     lambda m: (-1 if m & 2 else 1) * (m & 1))
 
+@math_func(lambda: smath.cos)
 def cos(x):
   a = x.a
   c, s = smath.cos(a), smath.sin(a)
@@ -340,9 +358,11 @@ def cos(x):
     lambda m: (-1 if m+1 & 2 else 1) * (s if m & 1 else c) * a**m,
     lambda m: (-1 if m+1 & 2 else 1) * (m+1 & 1))
 
+@math_func(lambda: smath.tan)
 def tan(x):
   return sin(x) / cos(x)
 
+@math_func(lambda: smath.asin)
 def asin(x):
   a = x.a
   return func_from_series(
@@ -353,15 +373,18 @@ def asin(x):
         for l in range(0, m, 2)),
     lambda m: double_factorial(m-2)**2 if m & 1 else 0)
 
+@math_func(lambda: smath.acos)
 def acos(x):
   # smath.pi/2 - asin(x)
   y = -asin(x)
   y.a = smath.acos(x.a)
   return y
 
+@math_func(lambda: smath.atan)
 def atan(x):
   return asin(x / hypot(1, x))
 
+@math_func(lambda: smath.sinh)
 def sinh(x):
   a = x.a
   c, s = smath.cosh(a), smath.sinh(a)
@@ -370,6 +393,7 @@ def sinh(x):
     lambda m: (c if m & 1 else s) * a**m,
     lambda m: m & 1)
 
+@math_func(lambda: smath.cosh)
 def cosh(x):
   a = x.a
   c, s = smath.cosh(a), smath.sinh(a)
@@ -378,15 +402,19 @@ def cosh(x):
     lambda m: (s if m & 1 else c) * a**m,
     lambda m: m+1 & 1)
 
+@math_func(lambda: smath.tanh)
 def tanh(x):
   return sinh(x) / cosh(x)
 
+@math_func(lambda: smath.asinh)
 def asinh(x):
   return log(x + hypot(1, x))
 
+@math_func(lambda: smath.acosh)
 def acosh(x):
   return log(x + sqrt(x-1) * sqrt(x+1))
 
+@math_func(lambda: smath.atanh)
 def atanh(x):
   return (log(1+x) - log(1-x)) / 2
 
