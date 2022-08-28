@@ -19,8 +19,9 @@ y = g + (∂g/∂p) i + (∂g/∂q) j
 The product xy of the two dual numbers contains information about fg and its
 first derivatives:
 
-xy  
-= fg + [f (∂g/∂p) + g (∂f/∂p)] i + [f (∂g/∂q) + g (∂f/∂q)] j + [(∂f/∂p) (∂g/∂q) + (∂f/∂q) (∂g/∂p)] ij  
+  xy  
+= fg + [f (∂g/∂p) + g (∂f/∂p)] i + [f (∂g/∂q) + g (∂f/∂q)] j
+  + [(∂f/∂p) (∂g/∂q) + (∂f/∂q) (∂g/∂p)] ij  
 = fg + [∂(fg)/∂p] i + [∂(fg)/∂q] j + [(∂f/∂p) (∂g/∂q) + (∂f/∂q) (∂g/∂p)] ij
 
 In addition to functions and first derivatives, dual numbers can also represent
