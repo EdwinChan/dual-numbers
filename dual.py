@@ -331,10 +331,11 @@ def exp(x):
 @math_func(lambda: smath.log)
 def log(x):
   a = x.a
-  if a == 0:
-    raise ValueError('math domain error')
   r = smath.log(a)
-  c = 1 - 1/a
+  try:
+    c = 1 - 1/a
+  except ZeroDivisionError:
+    raise ValueError('math domain error') from None
   return func_from_series(
     x-1, r,
     lambda m: (1 if m & 1 else -1) * math.factorial(m-1) * c**m,
