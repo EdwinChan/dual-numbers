@@ -215,7 +215,7 @@ def cbrt(x):
 def hypot(*x):
   return sqrt(sum(x**2 for x in x))
 
-def math_func(f, df):
+def math_func(name, f, df):
   def result(x):
     if isinstance(x, Dual):
       d = df(x.a)
@@ -226,6 +226,8 @@ def math_func(f, df):
       raise TypeError(
         'must be {}, not {}'
         .format(format_types([Dual, *stype]), type(x).__name__))
+
+  result.__name__ = result.__qualname__ = name
   return result
 
 def reciprocal(x):
@@ -234,20 +236,34 @@ def reciprocal(x):
   except ZeroDivisionError:
     raise ValueError('math domain error') from None
 
-exp   = math_func(lambda x: smath.exp(x),   lambda x: smath.exp(x))
-log   = math_func(lambda x: smath.log(x),   reciprocal)
-sin   = math_func(lambda x: smath.sin(x),   lambda x: smath.cos(x))
-cos   = math_func(lambda x: smath.cos(x),   lambda x: -smath.sin(x))
-tan   = math_func(lambda x: smath.tan(x),   lambda x: 1/smath.cos(x)**2)
-asin  = math_func(lambda x: smath.asin(x),  lambda x: 1/(1-x**2)**sfrac(1, 2))
-acos  = math_func(lambda x: smath.acos(x),  lambda x: -1/(1-x**2)**sfrac(1, 2))
-atan  = math_func(lambda x: smath.atan(x),  lambda x: 1/(1+x**2))
-sinh  = math_func(lambda x: smath.sinh(x),  lambda x: smath.cosh(x))
-cosh  = math_func(lambda x: smath.cosh(x),  lambda x: smath.sinh(x))
-tanh  = math_func(lambda x: smath.tanh(x),  lambda x: 1/smath.cosh(x)**2)
-asinh = math_func(lambda x: smath.asinh(x), lambda x: 1/(1+x**2)**sfrac(1, 2))
-acosh = math_func(lambda x: smath.acosh(x), lambda x: 1/(x**2-1)**sfrac(1, 2))
-atanh = math_func(lambda x: smath.atanh(x), lambda x: 1/(1-x**2))
+exp = math_func(
+  'exp', lambda x: smath.exp(x), lambda x: smath.exp(x))
+log = math_func(
+  'log', lambda x: smath.log(x), reciprocal)
+sin = math_func(
+  'sin', lambda x: smath.sin(x), lambda x: smath.cos(x))
+cos = math_func(
+  'cos', lambda x: smath.cos(x), lambda x: -smath.sin(x))
+tan = math_func(
+  'tan', lambda x: smath.tan(x), lambda x: 1/smath.cos(x)**2)
+asin = math_func(
+  'asin', lambda x: smath.asin(x), lambda x: 1/(1-x**2)**sfrac(1, 2))
+acos = math_func(
+  'acos', lambda x: smath.acos(x), lambda x: -1/(1-x**2)**sfrac(1, 2))
+atan = math_func(
+  'atan', lambda x: smath.atan(x), lambda x: 1/(1+x**2))
+sinh = math_func(
+  'sinh', lambda x: smath.sinh(x), lambda x: smath.cosh(x))
+cosh = math_func(
+  'cosh', lambda x: smath.cosh(x), lambda x: smath.sinh(x))
+tanh = math_func(
+  'tanh', lambda x: smath.tanh(x), lambda x: 1/smath.cosh(x)**2)
+asinh = math_func(
+  'asinh', lambda x: smath.asinh(x), lambda x: 1/(1+x**2)**sfrac(1, 2))
+acosh = math_func(
+  'acosh', lambda x: smath.acosh(x), lambda x: 1/(x**2-1)**sfrac(1, 2))
+atanh = math_func(
+  'atanh', lambda x: smath.atanh(x), lambda x: 1/(1-x**2))
 
 def format_alts(alts):
   alts = list(map(str, alts))
