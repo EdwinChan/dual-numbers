@@ -150,6 +150,12 @@ class Dual:
     else:
       return NotImplemented
 
+  def __hash__(self):
+    if not (b := drop_zeros(self.b)):
+      return hash(self.a)
+    else:
+      return hash((self.a, tuple(sorted(b.items()))))
+
   def __round__(self, ndigits=None):
     a = round(self.a, ndigits)
     b = {k: round(v, ndigits) for k, v in self.b.items()}

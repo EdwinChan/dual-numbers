@@ -158,6 +158,14 @@ class DualExactTest(DualTest):
       self.assertEqual(
         dual.sinh(x) / dual.cosh(x), dual.tanh(x), self.format_param(x))
 
+  def test_hash(self):
+    for x, in self.sample():
+      b = {**dict.fromkeys(range(max(x.b.keys()) + 1), 0), **x.b}
+      y = dual.Dual(x.a, b)
+      z = dual.Dual(x.a, {})
+      super().assertEqual(hash(x), hash(y))
+      super().assertEqual(hash(z), hash(z.a))
+
   def assert_inv(self, f, i, x):
     def collapse_dual(x):
       return dual.Dual(self.collapse_scalar(x.a), x.b)
