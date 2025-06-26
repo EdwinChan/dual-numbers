@@ -31,6 +31,9 @@ def use_scalar(scalar):
 
 use_scalar('real')
 
+def drop_zeros(b):
+  return {k: v for k, v in b.items() if v != 0}
+
 class Dual:
   def __init__(self, a, b):
     self.a = a
@@ -141,19 +144,16 @@ class Dual:
 
   def __eq__(self, other):
     if isinstance(other, Dual):
-      c = {k: v for k, v in self.b.items() if v != 0}
-      d = {k: v for k, v in other.b.items() if v != 0}
-      return self.a == other.a and c == d
+      return self.a == other.a and drop_zeros(self.b) == drop_zeros(other.b)
     elif isinstance(other, stype):
-      return self.a == other and all(v == 0 for v in self.b.values())
+      return self.a == other and not drop_zeros(self.b)
     else:
       return NotImplemented
 
   def __round__(self, ndigits=None):
     a = round(self.a, ndigits)
     b = {k: round(v, ndigits) for k, v in self.b.items()}
-    b = {k: v for k, v in b.items() if v != 0}
-    return Dual(a, b)
+    return Dual(a, drop_zeros(b))
 
   def chop(self, *, rel_tol=1e-9, abs_tol=0):
     if rel_tol < 0 or abs_tol < 0:
