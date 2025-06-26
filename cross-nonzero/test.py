@@ -209,15 +209,15 @@ else:
 @unittest.skipUnless(has_sympy, 'requires SymPy')
 class DualSymbolTest(DualExactTest, unittest.TestCase):
   unit_count = 3
+  term_count = 1 << unit_count
   max_pow    = 16
 
   @classmethod
   def setUpClass(cls):
     cls.duals = []
-    term_count = 1 << cls.unit_count
 
     def make_dual(symbol):
-      head, *tail = sympy.symbols('{}:{}'.format(symbol, term_count))
+      head, *tail = sympy.symbols('{}:{}'.format(symbol, cls.term_count))
       return dual.Dual(head, dict(enumerate(tail, 1)))
 
     for symbol in 'abc':

@@ -1,19 +1,7 @@
-import functools
 import itertools
-import operator
 import unittest
 
 import dual
-
-@functools.lru_cache(maxsize=None)
-def stirling(n, k):
-  # [[https://en.wikipedia.org/wiki/Stirling_numbers_of_the_second_kind]]
-  if n == 0 and k == 0:
-    return 1
-  elif n == 0 or k == 0:
-    return 0
-  else:
-    return stirling(n-1, k-1) + stirling(n-1, k) * k
 
 class DualTest:
   @staticmethod
@@ -188,17 +176,16 @@ else:
 
 @unittest.skipUnless(has_sympy, 'requires SymPy')
 class DualSymbolTest(DualExactTest, unittest.TestCase):
-  unit_count = 3
+  unit_count = 32
   max_pow    = 16
 
   @classmethod
   def setUpClass(cls):
     cls.duals = []
-    term_count = 1 << cls.unit_count
 
     def make_dual(symbol):
-      head, *tail = sympy.symbols('{}:{}'.format(symbol, term_count))
-      return dual.Dual(head, dict(enumerate(tail, 1)))
+      head, *tail = sympy.symbols('{}:{}'.format(symbol, cls.unit_count + 1))
+      return dual.Dual(head, dict(enumerate(tail)))
 
     for symbol in 'abc':
       cls.duals.append(make_dual(symbol))
@@ -289,7 +276,6 @@ class DualNumberTest(DualTest):
   unit_zero_frac = 1/8
 
   mix_count      = 32
-  max_fctr_count = 2
   max_term_count = 4
   mix_zero_frac  = 1/8
 
@@ -307,15 +293,10 @@ class DualNumberTest(DualTest):
 
     mixes = []
     for _ in range(cls.mix_count):
-      while True:
-        fctr_count = random.randint(1, cls.max_fctr_count)
-        term_count = random.randint(1, cls.max_term_count)
-        if fctr_count != 1 or term_count != 1:
-          break
+      term_count = random.randint(2, cls.max_term_count)
       mixes.append(dual.Dual(
         cls.random(),
-        {functools.reduce(operator.or_, random.sample(unit_keys, fctr_count)):
-        cls.random() for _ in range(term_count)}))
+        {random.choice(unit_keys): cls.random() for _ in range(term_count)}))
 
     for x in random.sample(units, round(cls.unit_count * cls.unit_zero_frac)):
       x.a = 0
