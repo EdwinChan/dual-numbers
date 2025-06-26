@@ -39,17 +39,11 @@ class Dual:
     self.a = a
     self.b = b
 
-  next_token = 0
-
-  @classmethod
-  def token(cls):
-    token = cls.next_token
-    cls.next_token += 1
-    return token
+  token = itertools.count()
 
   @classmethod
   def new(cls, a, v):
-    return Dual(a, {cls.token(): v})
+    return Dual(a, {next(cls.token): v})
 
   def __pos__(self):
     return Dual(self.a, self.b.copy())
