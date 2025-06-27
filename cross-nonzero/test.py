@@ -249,18 +249,17 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
   def test_pow_inv(self):
     for x, y in self.sample(2):
       if x.a != 0 and y.a != 0:
-        p, _ = sympy.posify(x.a)
-        x = dual.Dual(p, x.b)
-        p, _ = sympy.posify(y.a)
-        y = dual.Dual(p, y.b)
+        x, y = +x, +y
+        x.a, _ = sympy.posify(x.a)
+        y.a, _ = sympy.posify(y.a)
         self.assertEqual((x**y)**(1/y), x, self.format_param(x, y))
         self.assertEqual((x**(1/y))**y, x, self.format_param(x, y))
 
   def test_log_rcp(self):
     for x, in self.sample():
       if x.a != 0:
-        p, _ = sympy.posify(x.a)
-        x = dual.Dual(p, x.b)
+        x = +x
+        x.a, _ = sympy.posify(x.a)
         self.assertEqual(dual.log(1/x), -dual.log(x), self.format_param(x))
 
   def test_asin_log(self):
@@ -323,10 +322,8 @@ class DualNumberTest(DualTest):
 
   @classmethod
   def setUpClass(cls):
-    pures  = [cls.zero, cls.one]
-    pures += [
-      dual.Dual(cls.random(), {})
-      for _ in range(cls.pure_count)]
+    pures = [cls.zero, cls.one]
+    pures += [dual.Dual(cls.random(), {}) for _ in range(cls.pure_count)]
 
     units = [
       dual.Dual.new(cls.random(), cls.random())
