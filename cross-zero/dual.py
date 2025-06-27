@@ -43,65 +43,67 @@ class Dual:
 
   @classmethod
   def new(cls, a, v):
-    return Dual(a, {next(cls.token): v})
+    return __class__(a, {next(cls.token): v})
 
   def __pos__(self):
-    return Dual(self.a, self.b.copy())
+    return __class__(self.a, self.b.copy())
 
   def __neg__(self):
-    return Dual(-self.a, {k: -v for k, v in self.b.items()})
+    return __class__(-self.a, {k: -v for k, v in self.b.items()})
 
   def __add__(self, other):
-    if isinstance(other, Dual):
-      return Dual(
+    if isinstance(other, __class__):
+      return __class__(
         self.a + other.a,
         {**self.b, **{k: self.b.get(k, 0) + v for k, v in other.b.items()}})
     elif isinstance(other, stype):
-      return Dual(self.a + other, self.b)
+      return __class__(self.a + other, self.b)
     else:
       return NotImplemented
 
   def __sub__(self, other):
-    if isinstance(other, Dual):
-      return Dual(
+    if isinstance(other, __class__):
+      return __class__(
         self.a - other.a,
         {**self.b, **{k: self.b.get(k, 0) - v for k, v in other.b.items()}})
     elif isinstance(other, stype):
-      return Dual(self.a - other, self.b)
+      return __class__(self.a - other, self.b)
     else:
       return NotImplemented
 
   def __mul__(self, other):
-    if isinstance(other, Dual):
+    if isinstance(other, __class__):
       a = self.a * other.a
       b = {}
       for k, v in self.b.items():
         b[k] = b.get(k, 0) + v * other.a
       for k, v in other.b.items():
         b[k] = b.get(k, 0) + v * self.a
-      return Dual(a, b)
+      return __class__(a, b)
     elif isinstance(other, stype):
-      return Dual(self.a * other, {k: v * other for k, v in self.b.items()})
+      return __class__(
+        self.a * other, {k: v * other for k, v in self.b.items()})
     else:
       return NotImplemented
 
   def __truediv__(self, other):
-    if isinstance(other, Dual):
+    if isinstance(other, __class__):
       return self * other**-1
     elif isinstance(other, stype):
-      return Dual(self.a / other, {k: v / other for k, v in self.b.items()})
+      return __class__(
+        self.a / other, {k: v / other for k, v in self.b.items()})
     else:
       return NotImplemented
 
   def __pow__(self, other):
     if isinstance(other, numbers.Integral):
       if other == 0:
-        return Dual(1, {})
+        return __class__(1, {})
       else:
         a = self.a ** other
         d = other * self.a ** (other-1)
-        return Dual(a, {k: v * d for k, v in self.b.items()})
-    elif isinstance(other, stype + (Dual,)):
+        return __class__(a, {k: v * d for k, v in self.b.items()})
+    elif isinstance(other, stype + (__class__,)):
       return exp(other * log(self))
     else:
       return NotImplemented
@@ -137,7 +139,7 @@ class Dual:
       return NotImplemented
 
   def __eq__(self, other):
-    if isinstance(other, Dual):
+    if isinstance(other, __class__):
       return self.a == other.a and drop_zeros(self.b) == drop_zeros(other.b)
     elif isinstance(other, stype):
       return self.a == other and not drop_zeros(self.b)
@@ -153,7 +155,7 @@ class Dual:
   def __round__(self, ndigits=None):
     a = round(self.a, ndigits)
     b = {k: round(v, ndigits) for k, v in self.b.items()}
-    return Dual(a, drop_zeros(b))
+    return __class__(a, drop_zeros(b))
 
   def chop(self, *, rel_tol=1e-9, abs_tol=0):
     if rel_tol < 0 or abs_tol < 0:
@@ -163,7 +165,7 @@ class Dual:
     def is_finite(x):
       return abs(x) >= tol
 
-    return Dual(
+    return __class__(
       self.a if is_finite(self.a) else 0,
       {k: v for k, v in self.b.items() if is_finite(v)})
 
