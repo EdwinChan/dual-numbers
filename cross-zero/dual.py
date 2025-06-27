@@ -109,34 +109,19 @@ class Dual:
       return NotImplemented
 
   def __radd__(self, other):
-    if isinstance(other, stype):
-      return self + other
-    else:
-      return NotImplemented
+    return self + other
 
   def __rsub__(self, other):
-    if isinstance(other, stype):
-      return -self + other
-    else:
-      return NotImplemented
+    return -self + other
 
   def __rmul__(self, other):
-    if isinstance(other, stype):
-      return self * other
-    else:
-      return NotImplemented
+    return self * other
 
   def __rtruediv__(self, other):
-    if isinstance(other, stype):
-      return self**-1 * other
-    else:
-      return NotImplemented
+    return self**-1 * other
 
   def __rpow__(self, other):
-    if isinstance(other, stype):
-      return exp(self * smath.log(other))
-    else:
-      return NotImplemented
+    return exp(self * smath.log(other))
 
   def __eq__(self, other):
     if isinstance(other, __class__):
