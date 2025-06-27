@@ -170,7 +170,7 @@ class Dual:
       {k: v for k, v in self.b.items() if is_finite(v)})
 
   def __repr__(self):
-    return 'Dual({}, {})'.format(self.a, self.b)
+    return '{}({!r}, {!r})'.format(__class__.__name__, self.a, self.b)
 
 def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   if not hasattr(smath, 'isclose'):
@@ -202,11 +202,11 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   elif not (first_dual or first_scalar):
     raise TypeError(
       'must be {}, not {}'
-      .format(format_types([Dual, *stype]), type(first).__name__))
+      .format(format_types([Dual, *stype]), format_types([type(first)])))
   elif not (second_dual or second_scalar):
     raise TypeError(
       'must be {}, not {}'
-      .format(format_types([Dual, *stype]), type(second).__name__))
+      .format(format_types([Dual, *stype]), format_types([type(second)])))
 
 def sqrt(x):
   return x**sfrac(1, 2)
