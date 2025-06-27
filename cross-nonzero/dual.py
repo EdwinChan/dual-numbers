@@ -170,18 +170,19 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
 
   smath_isclose = functools.partial(
     smath.isclose, rel_tol=rel_tol, abs_tol=abs_tol)
+  dual_isclose = functools.partial(
+    isclose, rel_tol=rel_tol, abs_tol=abs_tol)
 
   if first_dual and second_dual:
     return (
       smath_isclose(first.a, second.a) and
-      all(smath_isclose(v, second.b.get(k, 0)) for k, v in first.b.items()) and
-      all(smath_isclose(v, first.b.get(k, 0)) for k, v in second.b.items()))
+      all(
+        smath_isclose(first.b.get(k, 0), second.b.get(k, 0))
+        for k in first.b.keys() | second.b.keys()))
   elif first_dual and second_scalar:
-    return (
-      smath_isclose(first.a, second) and
-      all(smath_isclose(v, 0) for k, v in first.b.items()))
+    return dual_isclose(first, Dual(second, {}))
   elif first_scalar and second_dual:
-    return isclose(second, first)
+    return dual_isclose(second, first)
   elif first_scalar and second_scalar:
     return smath_isclose(first, second)
   elif not (first_dual or first_scalar):
