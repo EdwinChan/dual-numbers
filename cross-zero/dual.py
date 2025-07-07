@@ -1,7 +1,8 @@
 __all__ = [
-  'Dual', 'isclose', 'sqrt', 'cbrt', 'hypot', 'exp', 'log', 'sin', 'cos',
-  'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh',
-  'atanh']
+  'Dual', 'isclose', 'sqrt', 'cbrt', 'hypot',
+  'exp', 'expm1', 'log', 'log1p', 'log2', 'log10',
+  'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
+  'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh']
 
 import functools
 import itertools
@@ -22,10 +23,17 @@ def use_scalar(scalar):
     sfrac = operator.truediv
     smath = cmath
   elif scalar == 'symbol':
+    import types
     import sympy
     stype = sympy.Basic, numbers.Number
     sfrac = sympy.Rational
-    smath = sympy
+    smath = types.ModuleType('sympy')
+    for key, value in vars(sympy).items():
+      setattr(smath, key, value)
+    smath.expm1 = lambda x: smath.exp(x) - 1
+    smath.log1p = lambda x: smath.log(1+x)
+    smath.log2  = lambda x: smath.log(x) / smath.log(2)
+    smath.log10 = lambda x: smath.log(x) / smath.log(10)
   else:
     raise ValueError('unrecognized scalar')
 
@@ -226,8 +234,16 @@ def reciprocal(x):
 
 exp = math_func(
   'exp', lambda x: smath.exp(x), lambda x: smath.exp(x))
+expm1 = math_func(
+  'expm1', lambda x: smath.expm1(x), lambda x: smath.exp(x))
 log = math_func(
   'log', lambda x: smath.log(x), reciprocal)
+log1p = math_func(
+  'log1p', lambda x: smath.log1p(x), lambda x: reciprocal(1+x))
+log2 = math_func(
+  'log2', lambda x: smath.log2(x), lambda x: reciprocal(x) / smath.log(2))
+log10 = math_func(
+  'log10', lambda x: smath.log10(x), lambda x: reciprocal(x) / smath.log(10))
 sin = math_func(
   'sin', lambda x: smath.sin(x), lambda x: smath.cos(x))
 cos = math_func(

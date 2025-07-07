@@ -89,6 +89,14 @@ class DualExactTest(DualTest):
   def test_exp_log_inv(self):
     for x, in self.sample():
       self.assert_inv(dual.exp, dual.log, x)
+      self.assert_inv(dual.expm1, dual.log1p, x)
+      self.assert_inv(lambda x: 2**x, dual.log2, x)
+      self.assert_inv(lambda x: 10**x, dual.log10, x)
+
+  def test_exp_log_alias(self):
+    for x, in self.sample():
+      self.assertEqual(dual.expm1(x), dual.exp(x) - 1, self.format_param(x))
+      self.assertEqual(dual.log1p(x), dual.log(1+x), self.format_param(x))
 
   def test_sin_sym(self):
     for x, in self.sample():
@@ -252,8 +260,10 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
 
   @staticmethod
   def valid_for(i, x):
-    if i is dual.log:
+    if i in [dual.log, dual.log2, dual.log10]:
       return x.a != 0
+    elif i is dual.log1p:
+      return x.a != -1
 
   @staticmethod
   def collapse_scalar(x):
