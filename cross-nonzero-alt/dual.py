@@ -136,6 +136,23 @@ class Dual(collections.UserDict):
     return __class__(drop_zeros(
       {k: round(v, ndigits) for k, v in self.items()}))
 
+  def convert_to(self, type):
+    if not (x := drop_zeros(self)) or x.keys() == {0}:
+      try:
+        return type(x.get(0, 0))
+      except TypeError:
+        pass
+    raise ValueError('cannot convert to {}'.format(type))
+
+  def __int__(self):
+    return self.convert_to(int)
+
+  def __float__(self):
+    return self.convert_to(float)
+
+  def __complex__(self):
+    return self.convert_to(complex)
+
   def chop(self, *, rel_tol=1e-9, abs_tol=0):
     if rel_tol < 0 or abs_tol < 0:
       raise ValueError('tolerances must be non-negative')

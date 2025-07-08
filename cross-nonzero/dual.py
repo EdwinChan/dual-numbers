@@ -150,6 +150,23 @@ class Dual:
     b = {k: round(v, ndigits) for k, v in self.b.items()}
     return __class__(a, drop_zeros(b))
 
+  def convert_to(self, type):
+    if not drop_zeros(self.b):
+      try:
+        return type(self.a)
+      except TypeError:
+        pass
+    raise ValueError('cannot convert to {}'.format(type))
+
+  def __int__(self):
+    return self.convert_to(int)
+
+  def __float__(self):
+    return self.convert_to(float)
+
+  def __complex__(self):
+    return self.convert_to(complex)
+
   def chop(self, *, rel_tol=1e-9, abs_tol=0):
     if rel_tol < 0 or abs_tol < 0:
       raise ValueError('tolerances must be non-negative')
