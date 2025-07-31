@@ -231,6 +231,7 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
   @classmethod
   def setUpClass(cls):
     cls.duals = []
+    cls.zeros = []
 
     def make_dual(symbol):
       head, *tail = sympy.symbols('{}:{}'.format(symbol, cls.term_count))
@@ -238,9 +239,9 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
 
     for symbol in 'abc':
       cls.duals.append(make_dual(symbol))
-
-    cls.zero = make_dual('z')
-    cls.zero.a = 0
+      z = make_dual('z{}'.format(symbol))
+      z.a = 0
+      cls.zeros.append(z)
 
   def setUp(self):
     dual.use_scalar('symbol')
@@ -290,9 +291,8 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
       self.assertEqual(y, z, self.format_param(x))
 
   def sample(self, n=1, *, allow_repeats=True):
-    yield self.duals[:n]
-    for i in range(n):
-      yield [self.duals[j] if i != j else self.zero for j in range(n)]
+    yield from itertools.product(
+      *zip(self.duals[:n], self.zeros[:n], strict=True))
 
   @staticmethod
   def valid_for(i, x):
