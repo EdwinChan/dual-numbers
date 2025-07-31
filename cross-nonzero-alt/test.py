@@ -248,9 +248,12 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
     dual.use_scalar('real')
 
   def assertEqual(self, x, y, msg=None):
-    x -= y
-    x = dual.Dual({k: sympy.simplify(v) for k, v in x.items()})
-    super().assertEqual(x, 0, msg)
+    z = x-y
+    z = dual.Dual({k: sympy.simplify(v) for k, v in z.items()})
+    if z != 0:
+      std = '{!r} != {!r}'.format(x, y)
+      msg = self._formatMessage(msg, std)
+      raise self.failureException(msg)
 
   def test_pow_inv(self):
     for x, y in self.sample(2):
