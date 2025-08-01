@@ -30,6 +30,12 @@ def use_scalar(scalar):
     smath = types.ModuleType('sympy')
     for key, value in vars(sympy).items():
       setattr(smath, key, value)
+    def sympy_log(x):
+      if x == 0:
+        raise ValueError('math domain error')
+      else:
+        return sympy.log(x)
+    smath.log   = sympy_log
     smath.expm1 = lambda x: smath.exp(x) - 1
     smath.log1p = lambda x: smath.log(1+x)
     smath.log2  = lambda x: smath.log(x) / smath.log(2)
@@ -104,14 +110,14 @@ class Dual:
       return NotImplemented
 
   def __pow__(self, other):
-    if isinstance(other, numbers.Integral):
-      if other == 0:
-        return __class__(1, {})
-      else:
+    if isinstance(other, stype):
+      try:
         a = self.a ** other
         d = other * self.a ** (other-1)
-        return __class__(a, {k: v * d for k, v in self.b.items()})
-    elif isinstance(other, stype + (__class__,)):
+      except ZeroDivisionError:
+        raise ValueError('math domain error') from None
+      return __class__(a, {k: v * d for k, v in self.b.items()})
+    elif isinstance(other, __class__):
       return exp(other * log(self))
     else:
       return NotImplemented

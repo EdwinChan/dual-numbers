@@ -43,7 +43,7 @@ class DualExactTest(DualTest):
   def test_truediv_zero(self):
     for x, y in self.sample(2):
       if y.a == 0:
-        with self.assertRaises(ZeroDivisionError, msg=self.format_param(x, y)):
+        with self.assertRaises(ValueError, msg=self.format_param(x, y)):
           x/y
 
   def test_mul_truediv_inv(self):
@@ -58,8 +58,28 @@ class DualExactTest(DualTest):
       self.assertEqual((y+z)*x, y*x+z*x, self.format_param(x, y, z))
 
   def test_pow_zero(self):
-    for x, in self.sample():
-      self.assertEqual(x**0, 1, self.format_param(x))
+    for x, y, z in self.sample(3):
+      y = dual.Dual(0, y.b)
+      z *= 0
+      with self.assertRaises(ValueError, msg=self.format_param(x)):
+        0**x
+      with self.assertRaises(ValueError, msg=self.format_param(y)):
+        0**y
+      with self.assertRaises(ValueError, msg=self.format_param(z)):
+        0**z
+      with self.assertRaises(ValueError, msg=self.format_param(y, x)):
+        y**x
+      with self.assertRaises(ValueError, msg=self.format_param(z, x)):
+        z**x
+      if x.a == 0:
+        with self.assertRaises(ValueError, msg=self.format_param(x)):
+          x**0
+        with self.assertRaises(ValueError, msg=self.format_param(x, y)):
+          x**y
+        with self.assertRaises(ValueError, msg=self.format_param(x, z)):
+          x**z
+      else:
+        self.assertEqual(x**0, 1, self.format_param(x))
 
   def test_pow_pos(self):
     for x, in self.sample():
@@ -344,9 +364,9 @@ class DualFloatTest(DualNumberTest):
     for x, in self.sample():
       self.assertAlmostEqual(
         dual.exp(x),
-        sum(
+        1 + sum(
           x**n / math.factorial(n)
-          for n in range(self.series_term_count)),
+          for n in range(1, self.series_term_count)),
         self.format_param(x))
 
   def test_sin_series(self):
@@ -362,9 +382,9 @@ class DualFloatTest(DualNumberTest):
     for x, in self.sample():
       self.assertAlmostEqual(
         dual.cos(x),
-        sum(
+        1 + sum(
           (-1 if n & 1 else 1) * x**(2*n) / math.factorial(2*n)
-          for n in range(self.series_term_count)),
+          for n in range(1, self.series_term_count)),
         self.format_param(x))
 
   def test_sinh_series(self):
@@ -380,9 +400,9 @@ class DualFloatTest(DualNumberTest):
     for x, in self.sample():
       self.assertAlmostEqual(
         dual.cosh(x),
-        sum(
+        1 + sum(
           x**(2*n) / math.factorial(2*n)
-          for n in range(self.series_term_count)),
+          for n in range(1, self.series_term_count)),
         self.format_param(x))
 
 class DualRealTest(DualFloatTest, unittest.TestCase):

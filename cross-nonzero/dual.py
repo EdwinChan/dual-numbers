@@ -30,6 +30,12 @@ def use_scalar(scalar):
     smath = types.ModuleType('sympy')
     for key, value in vars(sympy).items():
       setattr(smath, key, value)
+    def sympy_log(x):
+      if x == 0:
+        raise ValueError('math domain error')
+      else:
+        return sympy.log(x)
+    smath.log   = sympy_log
     smath.expm1 = lambda x: smath.exp(x) - 1
     smath.log1p = lambda x: smath.log(1+x)
     smath.log2  = lambda x: smath.log(x) / smath.log(2)
@@ -298,8 +304,8 @@ def func_from_series(x, fx_a, fx_b_cfnz, fx_b_cfz):
 def pow_int(x, n):
   if not isinstance(n, numbers.Integral):
     raise ValueError('can only raise to integer power')
-  if x.a == 0 and n < 0:
-    raise ZeroDivisionError('can only raise to non-negative integer power')
+  if x.a == 0 and n <= 0:
+    raise ValueError('can only raise to positive integer power')
   a = x.a
   r = a**n
   if n >= 0:
@@ -308,8 +314,8 @@ def pow_int(x, n):
       lambda m: r * math.perm(n, m),
       lambda m: math.factorial(n) if m == n else 0)
   else:
-    # lambda expression can be obtained by taking limit of math.perm(n, m) =
-    # math.gamma(n+1) / math.gamma(n-m+1) at n < 0
+    # lambda expression can be obtained by taking limit of math.perm(n, m) ==
+    # math.gamma(n+1) / math.gamma(n-m+1) as n approaches zero from below
     return func_from_series(
       x, r,
       lambda m: r * (-1 if m & 1 else 1) * math.perm(m-n-1, m),
