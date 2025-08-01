@@ -75,7 +75,7 @@ class DualExactTest(DualTest):
   def test_truediv_zero(self):
     for x, y in self.sample(2):
       if y[0] == 0:
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError, msg=self.format_param(x, y)):
           x/y
 
   def test_mul_truediv_inv(self):
@@ -115,7 +115,7 @@ class DualExactTest(DualTest):
   def test_log_zero(self):
     for x, in self.sample():
       if x[0] == 0:
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError, msg=self.format_param(x)):
           dual.log(x)
 
   def test_exp_log_inv(self):
