@@ -10,37 +10,43 @@ import itertools
 import math
 import numbers
 import operator
-import sys
 
 def use_scalar(scalar):
+  # pylint: disable-next=global-variable-undefined
   global stype, sfrac, smath
   if scalar == 'real':
-    stype = numbers.Real,
+    stype = (numbers.Real,)
     sfrac = operator.truediv
     smath = math
   elif scalar == 'complex':
+    # pylint: disable-next=import-outside-toplevel
     import cmath
-    stype = numbers.Complex,
+    stype = (numbers.Complex,)
     sfrac = operator.truediv
     smath = cmath
   elif scalar == 'symbol':
+    # pylint: disable=import-outside-toplevel
     import types
     import sympy
-    stype = sympy.Basic, numbers.Number
+    # pylint: enable=import-outside-toplevel
+    stype = (sympy.Basic, numbers.Number)
     sfrac = sympy.Rational
     smath = types.ModuleType('sympy')
     for key, value in vars(sympy).items():
       setattr(smath, key, value)
     def sympy_log(x):
+      # pylint: disable-next=no-else-raise
       if x == 0:
         raise ValueError('math domain error')
       else:
         return sympy.log(x)
     smath.log   = sympy_log
+    # pylint: disable=no-member
     smath.expm1 = lambda x: smath.exp(x) - 1
     smath.log1p = lambda x: smath.log(1+x)
     smath.log2  = lambda x: smath.log(x) / smath.log(2)
     smath.log10 = lambda x: smath.log(x) / smath.log(10)
+    # pylint: enable=no-member
   else:
     raise ValueError('unrecognized scalar')
 
@@ -63,6 +69,7 @@ class Dual(collections.UserDict):
     return __class__({k: -v for k, v in self.items()})
 
   def __add__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return __class__(
         {**self, **{k: self.get(k, 0) + v for k, v in other.items()}})
@@ -72,6 +79,7 @@ class Dual(collections.UserDict):
       return NotImplemented
 
   def __sub__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return __class__(
         {**self, **{k: self.get(k, 0) - v for k, v in other.items()}})
@@ -81,6 +89,7 @@ class Dual(collections.UserDict):
       return NotImplemented
 
   def __mul__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       x = __class__()
       for (k1, v1), (k2, v2) in itertools.product(self.items(), other.items()):
@@ -94,6 +103,7 @@ class Dual(collections.UserDict):
       return NotImplemented
 
   def __truediv__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return self * other**-1
     elif isinstance(other, stype):
@@ -102,6 +112,7 @@ class Dual(collections.UserDict):
       return NotImplemented
 
   def __pow__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, numbers.Integral):
       return pow_int(self, other)
     elif isinstance(other, stype + (__class__,)):
@@ -125,6 +136,7 @@ class Dual(collections.UserDict):
     return exp(self * smath.log(other))
 
   def __eq__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return drop_zeros(self) == drop_zeros(other)
     elif isinstance(other, stype):
@@ -133,6 +145,7 @@ class Dual(collections.UserDict):
       return NotImplemented
 
   def __hash__(self):
+    # pylint: disable-next=no-else-return
     if not (x := drop_zeros(self)) or x.keys() == {0}:
       return hash(x.get(0, 0))
     else:
@@ -142,13 +155,14 @@ class Dual(collections.UserDict):
     return __class__(drop_zeros(
       {k: round(v, ndigits) for k, v in self.items()}))
 
+  # pylint: disable-next=redefined-builtin
   def convert_to(self, type):
     if not (x := drop_zeros(self)) or x.keys() == {0}:
       try:
         return type(x.get(0, 0))
       except TypeError:
         pass
-    raise ValueError('cannot convert to {}'.format(type))
+    raise ValueError(f'cannot convert to {type}')
 
   def __int__(self):
     return self.convert_to(int)
@@ -168,7 +182,7 @@ class Dual(collections.UserDict):
     return __class__({k: v for k, v in self.items() if abs(v) >= tol})
 
   def __repr__(self):
-    return '{}({})'.format(__class__.__name__, super().__repr__())
+    return f'{__class__.__name__}({super().__repr__()})'
 
 def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   if not hasattr(smath, 'isclose'):
@@ -186,6 +200,7 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   dual_isclose = functools.partial(
     isclose, rel_tol=rel_tol, abs_tol=abs_tol)
 
+  # pylint: disable-next=no-else-return
   if first_dual and second_dual:
     return all(
       smath_isclose(first.get(k, 0), second.get(k, 0))
@@ -193,17 +208,20 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   elif first_dual and second_scalar:
     return dual_isclose(first, Dual({0: second}))
   elif first_scalar and second_dual:
+    # pylint: disable-next=arguments-out-of-order
     return dual_isclose(second, first)
   elif first_scalar and second_scalar:
     return smath_isclose(first, second)
   elif not (first_dual or first_scalar):
-    raise TypeError(
-      'must be {}, not {}'
-      .format(format_types([Dual, *stype]), format_types([type(first)])))
+    good_types = format_types([Dual, *stype])
+    bad_type = format_types([type(first)])
+    raise TypeError(f'must be {good_types}, not {bad_type}')
   elif not (second_dual or second_scalar):
-    raise TypeError(
-      'must be {}, not {}'
-      .format(format_types([Dual, *stype]), format_types([type(second)])))
+    good_types = format_types([Dual, *stype])
+    bad_type = format_types([type(second)])
+    raise TypeError(f'must be {good_types}, not {bad_type}')
+  else:
+    raise ValueError('cannot happen')
 
 def sqrt(x):
   return x**sfrac(1, 2)
@@ -289,6 +307,7 @@ def pow_int(x, n):
     raise ValueError('can only raise to positive integer power')
   a = x.get(0, 0)
   r = a**n
+  # pylint: disable-next=no-else-return
   if n >= 0:
     return func_from_series(
       x, r,
@@ -308,14 +327,15 @@ def double_factorial(n):
 def math_func(lazy_smath_func):
   def wrap(dual_func):
     def wrapper(x):
+      # pylint: disable-next=no-else-return
       if isinstance(x, Dual):
         return dual_func(x)
       elif isinstance(x, stype):
         return lazy_smath_func()(x)
       else:
-        raise TypeError(
-          'must be {}, not {}'
-          .format(format_types([Dual, *stype]), type(x).__name__))
+        good_types = format_types([Dual, *stype])
+        bad_type = format_types([type(x)])
+        raise TypeError(f'must be {good_types}, not {bad_type}')
     return wrapper
   return wrap
 
@@ -441,11 +461,13 @@ def atanh(x):
 
 def format_alts(alts):
   alts = list(map(str, alts))
+  # pylint: disable-next=no-else-return
   if len(alts) == 0:
     return ''
   elif len(alts) == 1:
     return alts[0]
   elif len(alts) == 2:
+    # pylint: disable-next=consider-using-f-string
     return '{} or {}'.format(*alts)
   else:
     return ', '.join(alts[:-1]) + ', or ' + alts[-1]

@@ -2,12 +2,15 @@ import functools
 import itertools
 import operator
 import unittest
+from abc import ABC, abstractmethod
+from typing import Any, ClassVar
 
 import dual
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def stirling(n, k):
   # [[https://en.wikipedia.org/wiki/Stirling_numbers_of_the_second_kind]]
+  # pylint: disable-next=no-else-return
   if n == 0 and k == 0:
     return 1
   elif n == 0 or k == 0:
@@ -35,10 +38,15 @@ class IterationTest(unittest.TestCase):
             r.add(tuple(map(tuple, d)))
           self.assertEqual(len(r), stirling(n, k))
 
-class DualTest:
+class DualTest(ABC, unittest.TestCase):
   @staticmethod
   def format_param(*x):
-    return 'parameters are {!r}'.format(x)
+    return f'parameters are {x!r}'
+
+  @classmethod
+  @abstractmethod
+  def sample(cls, n=1, *, allow_repeats=True):
+    pass
 
 class DualExactTest(DualTest):
   def test_add_asso(self):
@@ -76,6 +84,7 @@ class DualExactTest(DualTest):
     for x, y in self.sample(2):
       if y[0] == 0:
         with self.assertRaises(ValueError, msg=self.format_param(x, y)):
+          # pylint: disable-next=pointless-statement
           x/y
 
   def test_mul_truediv_inv(self):
@@ -94,21 +103,29 @@ class DualExactTest(DualTest):
       y = dual.Dual({k: v for k, v in y.items() if k != 0})
       z *= 0
       with self.assertRaises(ValueError, msg=self.format_param(x)):
+        # pylint: disable-next=pointless-statement
         0**x
       with self.assertRaises(ValueError, msg=self.format_param(y)):
+        # pylint: disable-next=pointless-statement
         0**y
       with self.assertRaises(ValueError, msg=self.format_param(z)):
+        # pylint: disable-next=pointless-statement
         0**z
       with self.assertRaises(ValueError, msg=self.format_param(y, x)):
+        # pylint: disable-next=pointless-statement
         y**x
       with self.assertRaises(ValueError, msg=self.format_param(z, x)):
+        # pylint: disable-next=pointless-statement
         z**x
       if x[0] == 0:
         with self.assertRaises(ValueError, msg=self.format_param(x)):
+          # pylint: disable-next=pointless-statement
           x**0
         with self.assertRaises(ValueError, msg=self.format_param(x, y)):
+          # pylint: disable-next=pointless-statement
           x**y
         with self.assertRaises(ValueError, msg=self.format_param(x, z)):
+          # pylint: disable-next=pointless-statement
           x**z
       else:
         self.assertEqual(x**0, 1, self.format_param(x))
@@ -234,15 +251,29 @@ class DualExactTest(DualTest):
     if self.valid_for(i, x):
       self.assertEqual(collapse_dual(f(i(x))), x)
 
+  max_pow: ClassVar[int]
+
+  @staticmethod
+  @abstractmethod
+  def valid_for(i, x):
+    pass
+
+  @staticmethod
+  @abstractmethod
+  def collapse_scalar(x):
+    pass
+
 try:
   import sympy
 except ImportError:
+  # pylint: disable-next=invalid-name
   has_sympy = False
 else:
+  # pylint: disable-next=invalid-name
   has_sympy = True
 
 @unittest.skipUnless(has_sympy, 'requires SymPy')
-class DualSymbolTest(DualExactTest, unittest.TestCase):
+class DualSymbolTest(DualExactTest):
   unit_count = 3
   term_count = 1 << unit_count
   max_pow    = 16
@@ -253,12 +284,11 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
     cls.zeros = []
 
     def make_dual(symbol):
-      return dual.Dual(enumerate(
-        sympy.symbols('{}:{}'.format(symbol, cls.term_count))))
+      return dual.Dual(enumerate(sympy.symbols(f'{symbol}:{cls.term_count}')))
 
     for symbol in 'abc':
       cls.duals.append(make_dual(symbol))
-      z = make_dual('z{}'.format(symbol))
+      z = make_dual(f'z{symbol}')
       z[0] = 0
       cls.zeros.append(z)
 
@@ -268,11 +298,12 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
   def tearDown(self):
     dual.use_scalar('real')
 
-  def assertEqual(self, x, y, msg=None):
+  def assertEqual(self, first, second, msg=None):
+    x, y = first, second
     z = x-y
     z = dual.Dual({k: sympy.simplify(v) for k, v in z.items()})
     if z != 0:
-      std = '{!r} != {!r}'.format(x, y)
+      std = f'{x!r} != {y!r}'
       msg = self._formatMessage(msg, std)
       raise self.failureException(msg)
 
@@ -308,16 +339,24 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
       z = self.acos_to_log(dual.sqrt, dual.log, x)
       self.assertEqual(y, z, self.format_param(x))
 
-  def sample(self, n=1, *, allow_repeats=True):
+  @classmethod
+  def sample(cls, n=1, *, allow_repeats=True):
     yield from itertools.product(
-      *zip(self.duals[:n], self.zeros[:n], strict=True))
+      *zip(cls.duals[:n], cls.zeros[:n], strict=True))
 
   @staticmethod
   def valid_for(i, x):
+    # pylint: disable-next=no-else-return
     if i in [dual.log, dual.log2, dual.log10]:
       return x[0] != 0
     elif i is dual.log1p:
       return x[0] != -1
+    elif i in [
+        dual.acos, dual.asin, dual.atan,
+        dual.acosh, dual.asinh, dual.atanh]:
+      return False
+    else:
+      return True
 
   @staticmethod
   def collapse_scalar(x):
@@ -325,17 +364,21 @@ class DualSymbolTest(DualExactTest, unittest.TestCase):
 
   @staticmethod
   def asin_to_log(sqrt, log, x):
+    # pylint: disable-next=import-outside-toplevel
     from sympy import I
     return -I * log(sqrt(1-x**2) + I*x)
 
   @staticmethod
   def acos_to_log(sqrt, log, x):
+    # pylint: disable-next=import-outside-toplevel
     from sympy import I
     return -I * log(I*sqrt(1-x**2) + x)
 
+# pylint: disable=wrong-import-position, wrong-import-order
 import math
 import random
 import sys
+# pylint: enable=wrong-import-position, wrong-import-order
 
 epsilon = sys.float_info.epsilon
 sqrt_epsilon = math.sqrt(epsilon)
@@ -381,20 +424,33 @@ class DualNumberTest(DualTest):
 
     cls.duals = pures + units + mixes
 
-  def sample(self, n=1, *, allow_repeats=True):
+  @classmethod
+  def sample(cls, n=1, *, allow_repeats=True):
+    # pylint: disable-next=no-else-return
     if allow_repeats:
-      return itertools.product(self.duals, repeat=n)
+      return itertools.product(cls.duals, repeat=n)
     else:
-      return itertools.combinations(self.duals, n)
+      return itertools.combinations(cls.duals, n)
+
+  zero: ClassVar[Any]
+  one:  ClassVar[Any]
+
+  @classmethod
+  @abstractmethod
+  def random(cls):
+    pass
 
 class DualFloatTest(DualNumberTest):
   series_term_count = 32
 
   series_term_max = series_term_count * epsilon**(1/series_term_count) / math.e
 
-  def assertAlmostEqual(self, x, y, msg=None):
+  # pylint: disable-next=too-many-arguments
+  def assertAlmostEqual(
+      self, first, second, places=None, msg=None, delta=None):
+    x, y = first, second
     if not dual.isclose(x, y, abs_tol=sqrt_epsilon):
-      std = '{!r} != {!r} in approximate sense'.format(x, y)
+      std = f'{x!r} != {y!r} in approximate sense'
       msg = self._formatMessage(msg, std)
       raise self.failureException(msg)
 
@@ -443,7 +499,7 @@ class DualFloatTest(DualNumberTest):
           for n in range(1, self.series_term_count)),
         self.format_param(x))
 
-class DualRealTest(DualFloatTest, unittest.TestCase):
+class DualRealTest(DualFloatTest):
   zero = dual.Dual({0: 0})
   one  = dual.Dual({0: 1})
 
@@ -454,7 +510,7 @@ class DualRealTest(DualFloatTest, unittest.TestCase):
         math.log2(sqrt_epsilon), math.log2(cls.series_term_max)) *
       random.choice([-1, 1]))
 
-class DualComplexTest(DualFloatTest, unittest.TestCase):
+class DualComplexTest(DualFloatTest):
   zero = dual.Dual({0: 0})
   one  = dual.Dual({0: 1})
 
@@ -469,4 +525,8 @@ class DualComplexTest(DualFloatTest, unittest.TestCase):
     return complex(DualRealTest.random(), DualRealTest.random())
 
 if __name__ == '__main__':
-  unittest.main()
+  loader = unittest.TestLoader()
+  runner = unittest.TextTestRunner()
+  tests = [IterationTest, DualSymbolTest, DualRealTest, DualComplexTest]
+  tests = map(loader.loadTestsFromTestCase, tests)
+  runner.run(unittest.TestSuite(tests))

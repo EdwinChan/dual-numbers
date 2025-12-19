@@ -9,37 +9,43 @@ import itertools
 import math
 import numbers
 import operator
-import sys
 
 def use_scalar(scalar):
+  # pylint: disable-next=global-variable-undefined
   global stype, sfrac, smath
   if scalar == 'real':
-    stype = numbers.Real,
+    stype = (numbers.Real,)
     sfrac = operator.truediv
     smath = math
   elif scalar == 'complex':
+    # pylint: disable-next=import-outside-toplevel
     import cmath
-    stype = numbers.Complex,
+    stype = (numbers.Complex,)
     sfrac = operator.truediv
     smath = cmath
   elif scalar == 'symbol':
+    # pylint: disable=import-outside-toplevel
     import types
     import sympy
-    stype = sympy.Basic, numbers.Number
+    # pylint: enable=import-outside-toplevel
+    stype = (sympy.Basic, numbers.Number)
     sfrac = sympy.Rational
     smath = types.ModuleType('sympy')
     for key, value in vars(sympy).items():
       setattr(smath, key, value)
     def sympy_log(x):
+      # pylint: disable-next=no-else-raise
       if x == 0:
         raise ValueError('math domain error')
       else:
         return sympy.log(x)
     smath.log   = sympy_log
+    # pylint: disable=no-member
     smath.expm1 = lambda x: smath.exp(x) - 1
     smath.log1p = lambda x: smath.log(1+x)
     smath.log2  = lambda x: smath.log(x) / smath.log(2)
     smath.log10 = lambda x: smath.log(x) / smath.log(10)
+    # pylint: enable=no-member
   else:
     raise ValueError('unrecognized scalar')
 
@@ -66,6 +72,7 @@ class Dual:
     return __class__(-self.a, {k: -v for k, v in self.b.items()})
 
   def __add__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return __class__(
         self.a + other.a,
@@ -76,6 +83,7 @@ class Dual:
       return NotImplemented
 
   def __sub__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return __class__(
         self.a - other.a,
@@ -86,6 +94,7 @@ class Dual:
       return NotImplemented
 
   def __mul__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       a = self.a * other.a
       b = {}
@@ -101,6 +110,7 @@ class Dual:
       return NotImplemented
 
   def __truediv__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return self * other**-1
     elif isinstance(other, stype):
@@ -110,6 +120,7 @@ class Dual:
       return NotImplemented
 
   def __pow__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, stype):
       try:
         a = self.a ** other
@@ -138,6 +149,7 @@ class Dual:
     return exp(self * smath.log(other))
 
   def __eq__(self, other):
+    # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return self.a == other.a and drop_zeros(self.b) == drop_zeros(other.b)
     elif isinstance(other, stype):
@@ -146,6 +158,7 @@ class Dual:
       return NotImplemented
 
   def __hash__(self):
+    # pylint: disable-next=no-else-return
     if not (b := drop_zeros(self.b)):
       return hash(self.a)
     else:
@@ -156,13 +169,14 @@ class Dual:
     b = {k: round(v, ndigits) for k, v in self.b.items()}
     return __class__(a, drop_zeros(b))
 
+  # pylint: disable-next=redefined-builtin
   def convert_to(self, type):
     if not drop_zeros(self.b):
       try:
         return type(self.a)
       except TypeError:
         pass
-    raise ValueError('cannot convert to {}'.format(type))
+    raise ValueError(f'cannot convert to {type}')
 
   def __int__(self):
     return self.convert_to(int)
@@ -186,7 +200,7 @@ class Dual:
       {k: v for k, v in self.b.items() if is_finite(v)})
 
   def __repr__(self):
-    return '{}({!r}, {!r})'.format(__class__.__name__, self.a, self.b)
+    return f'{__class__.__name__}({self.a!r}, {self.b!r})'
 
 def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   if not hasattr(smath, 'isclose'):
@@ -204,6 +218,7 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   dual_isclose = functools.partial(
     isclose, rel_tol=rel_tol, abs_tol=abs_tol)
 
+  # pylint: disable-next=no-else-return
   if first_dual and second_dual:
     return (
       smath_isclose(first.a, second.a) and
@@ -213,17 +228,20 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
   elif first_dual and second_scalar:
     return dual_isclose(first, Dual(second, {}))
   elif first_scalar and second_dual:
+    # pylint: disable-next=arguments-out-of-order
     return dual_isclose(second, first)
   elif first_scalar and second_scalar:
     return smath_isclose(first, second)
   elif not (first_dual or first_scalar):
-    raise TypeError(
-      'must be {}, not {}'
-      .format(format_types([Dual, *stype]), format_types([type(first)])))
+    good_types = format_types([Dual, *stype])
+    bad_type = format_types([type(first)])
+    raise TypeError(f'must be {good_types}, not {bad_type}')
   elif not (second_dual or second_scalar):
-    raise TypeError(
-      'must be {}, not {}'
-      .format(format_types([Dual, *stype]), format_types([type(second)])))
+    good_types = format_types([Dual, *stype])
+    bad_type = format_types([type(second)])
+    raise TypeError(f'must be {good_types}, not {bad_type}')
+  else:
+    raise ValueError('cannot happen')
 
 def sqrt(x):
   return x**sfrac(1, 2)
@@ -236,15 +254,16 @@ def hypot(*x):
 
 def math_func(name, f, df):
   def result(x):
+    # pylint: disable-next=no-else-return
     if isinstance(x, Dual):
       d = df(x.a)
       return Dual(f(x.a), {k: v * d for k, v in x.b.items()})
     elif isinstance(x, stype):
       return f(x)
     else:
-      raise TypeError(
-        'must be {}, not {}'
-        .format(format_types([Dual, *stype]), type(x).__name__))
+      good_types = format_types([Dual, *stype])
+      bad_type = format_types([type(x)])
+      raise TypeError(f'must be {good_types}, not {bad_type}')
 
   result.__name__ = result.__qualname__ = name
   return result
@@ -255,6 +274,8 @@ def reciprocal(x):
   except ZeroDivisionError:
     raise ValueError('math domain error') from None
 
+# lambdas use current value of smath
+# pylint: disable=unnecessary-lambda
 exp = math_func(
   'exp', lambda x: smath.exp(x), lambda x: smath.exp(x))
 expm1 = math_func(
@@ -291,14 +312,17 @@ acosh = math_func(
   'acosh', lambda x: smath.acosh(x), lambda x: 1/(x**2-1)**sfrac(1, 2))
 atanh = math_func(
   'atanh', lambda x: smath.atanh(x), lambda x: 1/(1-x**2))
+# pylint: enable=unnecessary-lambda
 
 def format_alts(alts):
   alts = list(map(str, alts))
+  # pylint: disable-next=no-else-return
   if len(alts) == 0:
     return ''
   elif len(alts) == 1:
     return alts[0]
   elif len(alts) == 2:
+    # pylint: disable-next=consider-using-f-string
     return '{} or {}'.format(*alts)
   else:
     return ', '.join(alts[:-1]) + ', or ' + alts[-1]
