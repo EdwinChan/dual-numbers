@@ -416,7 +416,8 @@ class DualNumberTest(DualTest):
           break
       mixes.append(dual.Dual(
         cls.random(),
-        {functools.reduce(operator.or_, random.sample(unit_keys, fctr_count)):
+        {functools.reduce(
+          operator.or_, random.sample(unit_keys, fctr_count)):
         cls.random() for _ in range(term_count)}))
 
     for x in random.sample(units, round(cls.unit_count * cls.unit_zero_frac)):
