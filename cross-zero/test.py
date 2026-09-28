@@ -1,4 +1,5 @@
 import itertools
+import typing
 import unittest
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar
@@ -67,7 +68,9 @@ class DualExactTest(DualTest):
 
   def test_pow_zero(self):
     for x, y, z in self.sample(3):
+      # ruff: ignore[PLW2901]
       y = dual.Dual(0, y.b)
+      # ruff: ignore[PLW2901]
       z *= 0
       with self.assertRaises(ValueError, msg=self.format_param(x)):
         # pylint: disable-next=pointless-statement
@@ -266,6 +269,7 @@ class DualSymbolTest(DualExactTest):
   def tearDown(self):
     dual.use_scalar('real')
 
+  @typing.override
   def assertEqual(self, first, second, msg=None):
     x, y = first, second
     z = x-y
@@ -279,6 +283,7 @@ class DualSymbolTest(DualExactTest):
   def test_pow_inv(self):
     for x, y in self.sample(2):
       if x.a != 0 and y.a != 0:
+        # ruff: ignore[PLW2901]
         x, y = +x, +y
         x.a, _ = sympy.posify(x.a)
         y.a, _ = sympy.posify(y.a)
@@ -288,6 +293,7 @@ class DualSymbolTest(DualExactTest):
   def test_log_rcp(self):
     for x, in self.sample():
       if x.a != 0:
+        # ruff: ignore[PLW2901]
         x = +x
         x.a, _ = sympy.posify(x.a)
         self.assertEqual(dual.log(1/x), -dual.log(x), self.format_param(x))
@@ -309,6 +315,7 @@ class DualSymbolTest(DualExactTest):
       self.assertEqual(y, z, self.format_param(x))
 
   @classmethod
+  # ruff: ignore[ARG003]
   def sample(cls, n=1, *, allow_repeats=True):
     yield from itertools.product(
       *zip(cls.duals[:n], cls.zeros[:n], strict=True))
@@ -318,14 +325,13 @@ class DualSymbolTest(DualExactTest):
     # pylint: disable-next=no-else-return
     if i in [dual.log, dual.log2, dual.log10]:
       return x.a != 0
+    # ruff: ignore[RET505]
     elif i is dual.log1p:
       return x.a != -1
-    elif i in [
-        dual.acos, dual.asin,
-        dual.acosh, dual.asinh]:
-      return False
     else:
-      return True
+      return i not in [
+        dual.acos, dual.asin,
+        dual.acosh, dual.asinh]
 
   @staticmethod
   def collapse_scalar(x):
@@ -333,21 +339,21 @@ class DualSymbolTest(DualExactTest):
 
   @staticmethod
   def asin_to_log(sqrt, log, x):
-    # pylint: disable-next=import-outside-toplevel
+    # ruff: ignore[PLC0415]  # pylint: disable-next=import-outside-toplevel
     from sympy import I
     return -I * log(sqrt(1-x**2) + I*x)
 
   @staticmethod
   def acos_to_log(sqrt, log, x):
-    # pylint: disable-next=import-outside-toplevel
+    # ruff: ignore[PLC0415]  # pylint: disable-next=import-outside-toplevel
     from sympy import I
     return -I * log(I*sqrt(1-x**2) + x)
 
-# pylint: disable=wrong-import-position, wrong-import-order
+# ruff: disable[E402]  # pylint: disable=wrong-import-position, wrong-import-order
 import math
 import random
 import sys
-# pylint: enable=wrong-import-position, wrong-import-order
+# ruff: enable[E402]  # pylint: enable=wrong-import-position, wrong-import-order
 
 epsilon = sys.float_info.epsilon
 sqrt_epsilon = math.sqrt(epsilon)
@@ -370,8 +376,9 @@ class DualNumberTest(DualTest):
     units = [
       dual.Dual.new(cls.random(), cls.random())
       for _ in range(cls.unit_count)]
-    unit_keys = list(set(k for x in units for k in x.b.keys()))
+    unit_keys = list({k for x in units for k in x.b})
 
+    # ruff: disable[S311]
     mixes = []
     for _ in range(cls.mix_count):
       term_count = random.randint(2, cls.max_term_count)
@@ -383,6 +390,7 @@ class DualNumberTest(DualTest):
       x.a = 0
     for x in random.sample(mixes, round(cls.mix_count * cls.mix_zero_frac)):
       x.a = 0
+    # ruff: enable[S311]
 
     cls.duals = pures + units + mixes
 
@@ -391,6 +399,7 @@ class DualNumberTest(DualTest):
     # pylint: disable-next=no-else-return
     if allow_repeats:
       return itertools.product(cls.duals, repeat=n)
+    # ruff: ignore[RET505]
     else:
       return itertools.combinations(cls.duals, n)
 
@@ -407,7 +416,7 @@ class DualFloatTest(DualNumberTest):
 
   series_term_max = series_term_count * epsilon**(1/series_term_count) / math.e
 
-  # pylint: disable-next=too-many-arguments
+  @typing.override
   def assertAlmostEqual(
       self, first, second, places=None, msg=None, delta=None):
     x, y = first, second
@@ -467,6 +476,7 @@ class DualRealTest(DualFloatTest):
 
   @classmethod
   def random(cls):
+    # ruff: ignore[S311]
     return (
       2**random.uniform(
         math.log2(sqrt_epsilon), math.log2(cls.series_term_max)) *

@@ -1,3 +1,4 @@
+# ruff: ignore[RUF022]
 __all__ = [
   'Dual', 'isclose', 'sqrt', 'cbrt', 'hypot',
   'exp', 'expm1', 'log', 'log1p', 'log2', 'log10',
@@ -12,23 +13,23 @@ import numbers
 import operator
 
 def use_scalar(scalar):
-  # pylint: disable-next=global-variable-undefined
+  # ruff: ignore[PLW0603]  # pylint: disable-next=global-variable-undefined
   global stype, sfrac, smath
   if scalar == 'real':
     stype = (numbers.Real,)
     sfrac = operator.truediv
     smath = math
   elif scalar == 'complex':
-    # pylint: disable-next=import-outside-toplevel
+    # ruff: ignore[PLC0415]  # pylint: disable-next=import-outside-toplevel
     import cmath
     stype = (numbers.Complex,)
     sfrac = operator.truediv
     smath = cmath
   elif scalar == 'symbol':
-    # pylint: disable=import-outside-toplevel
+    # ruff: disable[PLC0415]  # pylint: disable=import-outside-toplevel
     import types
     import sympy
-    # pylint: enable=import-outside-toplevel
+    # ruff: enable[PLC0415]  # pylint: enable=import-outside-toplevel
     stype = (sympy.Basic, numbers.Number)
     sfrac = sympy.Rational
     smath = types.ModuleType('sympy')
@@ -38,6 +39,7 @@ def use_scalar(scalar):
       # pylint: disable-next=no-else-raise
       if x == 0:
         raise ValueError('math domain error')
+      # ruff: ignore[RET506]
       else:
         return sympy.log(x)
     smath.log   = sympy_log
@@ -73,8 +75,9 @@ class Dual(collections.UserDict):
     if isinstance(other, __class__):
       return __class__(
         {**self, **{k: self.get(k, 0) + v for k, v in other.items()}})
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
-      return __class__({**self, **{0: self.get(0, 0) + other}})
+      return __class__({**self, 0: self.get(0, 0) + other})
     else:
       return NotImplemented
 
@@ -83,8 +86,9 @@ class Dual(collections.UserDict):
     if isinstance(other, __class__):
       return __class__(
         {**self, **{k: self.get(k, 0) - v for k, v in other.items()}})
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
-      return __class__({**self, **{0: self.get(0, 0) - other}})
+      return __class__({**self, 0: self.get(0, 0) - other})
     else:
       return NotImplemented
 
@@ -97,6 +101,7 @@ class Dual(collections.UserDict):
           k, v = k1 | k2, v1 * v2
           x[k] = x.get(k, 0) + v
       return x
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return __class__({k: v * other for k, v in self.items()})
     else:
@@ -106,6 +111,7 @@ class Dual(collections.UserDict):
     # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return self * other**-1
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return __class__({k: v / other for k, v in self.items()})
     else:
@@ -115,7 +121,8 @@ class Dual(collections.UserDict):
     # pylint: disable-next=no-else-return
     if isinstance(other, numbers.Integral):
       return pow_int(self, other)
-    elif isinstance(other, stype + (__class__,)):
+    # ruff: ignore[RET505]
+    elif isinstance(other, (*stype, __class__)):
       return exp(other * log(self))
     else:
       return NotImplemented
@@ -139,6 +146,7 @@ class Dual(collections.UserDict):
     # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return drop_zeros(self) == drop_zeros(other)
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return drop_zeros(self) == drop_zeros({0: other})
     else:
@@ -148,6 +156,7 @@ class Dual(collections.UserDict):
     # pylint: disable-next=no-else-return
     if not (x := drop_zeros(self)) or x.keys() == {0}:
       return hash(x.get(0, 0))
+    # ruff: ignore[RET505]
     else:
       return hash(tuple(sorted(x.items())))
 
@@ -155,7 +164,7 @@ class Dual(collections.UserDict):
     return __class__(drop_zeros(
       {k: round(v, ndigits) for k, v in self.items()}))
 
-  # pylint: disable-next=redefined-builtin
+  # ruff: ignore[A002]  # pylint: disable-next=redefined-builtin
   def convert_to(self, type):
     if not (x := drop_zeros(self)) or x.keys() == {0}:
       try:
@@ -205,6 +214,7 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
     return all(
       smath_isclose(first.get(k, 0), second.get(k, 0))
       for k in first.keys() | second.keys())
+  # ruff: ignore[RET505]
   elif first_dual and second_scalar:
     return dual_isclose(first, Dual({0: second}))
   elif first_scalar and second_dual:
@@ -252,12 +262,14 @@ def iter_stirling(x, k):
   elif x and k > 0:
     h, t = x[0], x[1:]
     for d in iter_stirling(t, k-1):
-      yield [[h]] + d
+      yield [[h], *d]
     for d in iter_stirling(t, k):
       for i in range(k):
-        yield d[:i] + [[h] + d[i]] + d[i+1:]
+        yield [*d[:i], [h, *d[i]], *d[i+1:]]
 
 def func_from_series(x, fx_a, fx_b_cfnz, fx_b_cfz):
+  # ruff: ignore[ERA001]; textual
+
   # this function defines a mathematical function f(x) through its power-series
   # expansion around x == 0:
   #   f(x) == sum(c[n] * x**n for n in itertools.count())
@@ -287,22 +299,24 @@ def func_from_series(x, fx_a, fx_b_cfnz, fx_b_cfz):
     c = {k: x.get(k, 0) for k in k if k != 0}
     fx_b_cf = [fx_b_cfz(m) for m in range(1, m+1)]
 
+  # ruff: ignore[B020]
   for s in s:
     k = sum(s)
     for m in range(len(s)):
       q = fx_b_cf[m]
       for d in iter_stirling(s, m+1):
+        # ruff: ignore[PLW2901]
         d = map(sum, d)
         fx_b[k] += functools.reduce(operator.mul, (c[k] for k in d)) * q
 
-  return Dual({**fx_b, **{0: fx_a}})
+  return Dual({**fx_b, 0: fx_a})
 
 # integral power is derived by brute-force expansion
 # other functions are defined through power-series expansion
 
 def pow_int(x, n):
   if not isinstance(n, numbers.Integral):
-    raise ValueError('can only raise to integer power')
+    raise TypeError('can only raise to integer power')
   if x.get(0, 0) == 0 and n <= 0:
     raise ValueError('can only raise to positive integer power')
   a = x.get(0, 0)
@@ -313,6 +327,7 @@ def pow_int(x, n):
       x, r,
       lambda m: r * math.perm(n, m),
       lambda m: math.factorial(n) if m == n else 0)
+  # ruff: ignore[RET505]
   else:
     # lambda expression can be obtained by taking limit of math.perm(n, m) =
     # math.gamma(n+1) / math.gamma(n-m+1) at n < 0
@@ -330,6 +345,7 @@ def math_func(lazy_smath_func):
       # pylint: disable-next=no-else-return
       if isinstance(x, Dual):
         return dual_func(x)
+      # ruff: ignore[RET505]
       elif isinstance(x, stype):
         return lazy_smath_func()(x)
       else:
@@ -346,7 +362,7 @@ def exp(x):
   return func_from_series(
     x, r,
     lambda m: r * a**m,
-    lambda m: 1)
+    lambda _: 1)
 
 @math_func(lambda: smath.expm1)
 def expm1(x):
@@ -416,6 +432,7 @@ def asin(x):
 
 @math_func(lambda: smath.acos)
 def acos(x):
+  # ruff: ignore[ERA001]; equivalent
   # smath.pi/2 - asin(x)
   y = -asin(x)
   y[0] = smath.acos(x.get(0, 0))
@@ -471,4 +488,5 @@ def format_alts(alts):
       return ', '.join(init) + f', or {last}'
 
 def format_types(types):
+  # ruff: ignore[A001]
   return format_alts(type.__name__ for type in types)

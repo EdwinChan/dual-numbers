@@ -1,3 +1,4 @@
+# ruff: ignore[RUF022]
 __all__ = [
   'Dual', 'isclose', 'sqrt', 'cbrt', 'hypot',
   'exp', 'expm1', 'log', 'log1p', 'log2', 'log10',
@@ -11,23 +12,23 @@ import numbers
 import operator
 
 def use_scalar(scalar):
-  # pylint: disable-next=global-variable-undefined
+  # ruff: ignore[PLW0603]  # pylint: disable-next=global-variable-undefined
   global stype, sfrac, smath
   if scalar == 'real':
     stype = (numbers.Real,)
     sfrac = operator.truediv
     smath = math
   elif scalar == 'complex':
-    # pylint: disable-next=import-outside-toplevel
+    # ruff: ignore[PLC0415]  # pylint: disable-next=import-outside-toplevel
     import cmath
     stype = (numbers.Complex,)
     sfrac = operator.truediv
     smath = cmath
   elif scalar == 'symbol':
-    # pylint: disable=import-outside-toplevel
+    # ruff: disable[PLC0415]  # pylint: disable=import-outside-toplevel
     import types
     import sympy
-    # pylint: enable=import-outside-toplevel
+    # ruff: enable[PLC0415]  # pylint: enable=import-outside-toplevel
     stype = (sympy.Basic, numbers.Number)
     sfrac = sympy.Rational
     smath = types.ModuleType('sympy')
@@ -37,6 +38,7 @@ def use_scalar(scalar):
       # pylint: disable-next=no-else-raise
       if x == 0:
         raise ValueError('math domain error')
+      # ruff: ignore[RET506]
       else:
         return sympy.log(x)
     smath.log   = sympy_log
@@ -77,6 +79,7 @@ class Dual:
       return __class__(
         self.a + other.a,
         {**self.b, **{k: self.b.get(k, 0) + v for k, v in other.b.items()}})
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return __class__(self.a + other, self.b)
     else:
@@ -88,6 +91,7 @@ class Dual:
       return __class__(
         self.a - other.a,
         {**self.b, **{k: self.b.get(k, 0) - v for k, v in other.b.items()}})
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return __class__(self.a - other, self.b)
     else:
@@ -103,6 +107,7 @@ class Dual:
       for k, v in other.b.items():
         b[k] = b.get(k, 0) + v * self.a
       return __class__(a, b)
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return __class__(
         self.a * other, {k: v * other for k, v in self.b.items()})
@@ -113,6 +118,7 @@ class Dual:
     # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return self * other**-1
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return __class__(
         self.a / other, {k: v / other for k, v in self.b.items()})
@@ -128,6 +134,7 @@ class Dual:
       except ZeroDivisionError:
         raise ValueError('math domain error') from None
       return __class__(a, {k: v * d for k, v in self.b.items()})
+    # ruff: ignore[RET505]
     elif isinstance(other, __class__):
       return exp(other * log(self))
     else:
@@ -152,6 +159,7 @@ class Dual:
     # pylint: disable-next=no-else-return
     if isinstance(other, __class__):
       return self.a == other.a and drop_zeros(self.b) == drop_zeros(other.b)
+    # ruff: ignore[RET505]
     elif isinstance(other, stype):
       return self.a == other and not drop_zeros(self.b)
     else:
@@ -161,6 +169,7 @@ class Dual:
     # pylint: disable-next=no-else-return
     if not (b := drop_zeros(self.b)):
       return hash(self.a)
+    # ruff: ignore[RET505]
     else:
       return hash((self.a, tuple(sorted(b.items()))))
 
@@ -169,7 +178,7 @@ class Dual:
     b = {k: round(v, ndigits) for k, v in self.b.items()}
     return __class__(a, drop_zeros(b))
 
-  # pylint: disable-next=redefined-builtin
+  # ruff: ignore[A002]  # pylint: disable-next=redefined-builtin
   def convert_to(self, type):
     if not drop_zeros(self.b):
       try:
@@ -225,6 +234,7 @@ def isclose(first, second, *, rel_tol=1e-9, abs_tol=0):
       all(
         smath_isclose(first.b.get(k, 0), second.b.get(k, 0))
         for k in first.b.keys() | second.b.keys()))
+  # ruff: ignore[RET505]
   elif first_dual and second_scalar:
     return dual_isclose(first, Dual(second, {}))
   elif first_scalar and second_dual:
@@ -258,6 +268,7 @@ def math_func(name, f, df):
     if isinstance(x, Dual):
       d = df(x.a)
       return Dual(f(x.a), {k: v * d for k, v in x.b.items()})
+    # ruff: ignore[RET505]
     elif isinstance(x, stype):
       return f(x)
     else:
@@ -274,8 +285,8 @@ def reciprocal(x):
   except ZeroDivisionError:
     raise ValueError('math domain error') from None
 
-# lambdas use current value of smath
-# pylint: disable=unnecessary-lambda
+# lambdas using current value of smath
+# ruff: disable[PLW0108]  # pylint: disable=unnecessary-lambda
 exp = math_func(
   'exp', lambda x: smath.exp(x), lambda x: smath.exp(x))
 expm1 = math_func(
@@ -312,7 +323,7 @@ acosh = math_func(
   'acosh', lambda x: smath.acosh(x), lambda x: 1/(x**2-1)**sfrac(1, 2))
 atanh = math_func(
   'atanh', lambda x: smath.atanh(x), lambda x: 1/(1-x**2))
-# pylint: enable=unnecessary-lambda
+# ruff: enable[PLW0108]  # pylint: enable=unnecessary-lambda
 
 def format_alts(alts):
   match list(map(str, alts)):
@@ -326,4 +337,5 @@ def format_alts(alts):
       return ', '.join(init) + f', or {last}'
 
 def format_types(types):
+  # ruff: ignore[A001]
   return format_alts(type.__name__ for type in types)
