@@ -315,17 +315,15 @@ atanh = math_func(
 # pylint: enable=unnecessary-lambda
 
 def format_alts(alts):
-  alts = list(map(str, alts))
-  # pylint: disable-next=no-else-return
-  if len(alts) == 0:
-    return ''
-  elif len(alts) == 1:
-    return alts[0]
-  elif len(alts) == 2:
-    # pylint: disable-next=consider-using-f-string
-    return '{} or {}'.format(*alts)
-  else:
-    return ', '.join(alts[:-1]) + ', or ' + alts[-1]
+  match list(map(str, alts)):
+    case []:
+      return ''
+    case [one]:
+      return one
+    case [one, two]:
+      return f'{one} or {two}'
+    case [*init, last]:
+      return ', '.join(init) + f', or {last}'
 
 def format_types(types):
   return format_alts(type.__name__ for type in types)
