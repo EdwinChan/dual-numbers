@@ -136,7 +136,7 @@ class Dual:
       return __class__(a, {k: v * d for k, v in self.b.items()})
     # ruff: ignore[RET505]
     elif isinstance(other, __class__):
-      return exp(other * log(self))
+      return exp(log(self) * other)
     else:
       return NotImplemented
 

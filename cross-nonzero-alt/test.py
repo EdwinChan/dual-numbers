@@ -374,13 +374,15 @@ class DualSymbolTest(DualExactTest):
   def asin_to_log(sqrt, log, x):
     # ruff: ignore[PLC0415]  # pylint: disable-next=import-outside-toplevel
     from sympy import I
-    return -I * log(sqrt(1-x**2) + I*x)
+    # ensure multiplication is handled by Dual, not sympy
+    return log(sqrt(1-x**2) + x*I) * -I
 
   @staticmethod
   def acos_to_log(sqrt, log, x):
     # ruff: ignore[PLC0415]  # pylint: disable-next=import-outside-toplevel
     from sympy import I
-    return -I * log(I*sqrt(1-x**2) + x)
+    # ensure multiplication is handled by Dual, not sympy
+    return log(sqrt(1-x**2)*I + x) * -I
 
 # ruff: disable[E402]  # pylint: disable=wrong-import-position, wrong-import-order
 import math

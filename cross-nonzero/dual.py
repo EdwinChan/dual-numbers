@@ -136,7 +136,7 @@ class Dual:
       return pow_int(self, other)
     # ruff: ignore[RET505]
     elif isinstance(other, (*stype, __class__)):
-      return exp(other * log(self))
+      return exp(log(self) * other)
     else:
       return NotImplemented
 
